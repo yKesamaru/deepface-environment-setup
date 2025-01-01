@@ -1,22 +1,44 @@
-# たのしくないdeepfaceの環境構築
+# たのしくないdeepFaceの環境構築
 ## はじめに
-deepfaceは様々な研究で得られたstate-of-the-artな顔照合学習モデルの評価を簡便に行えるラッパー的な軽量フレームワークです。VGG-Face, OpenFace, Google FaceNet, Facebook DeepFace, Dlib, DeepID, ArcFace, SFace, GhostFaceNetを一度に評価できるのがウリです。
+deepFaceは様々な研究で得られたstate-of-the-artな顔照合学習モデルの評価を簡便に行えるラッパー的な軽量フレームワークです。VGG-Face, OpenFace, Google FaceNet, Facebook DeepFace, Dlib, DeepID, ArcFace, SFace, GhostFaceNetを一度に評価できるのがウリです。
 
-ただ、ですね…、こういうリポジトリにありがちなのですが、年数が経っているのでそのままでは動作しないわけです。
+ただ、ですね…、こういうリポジトリにありがちなのですが、ホスト環境によって動作しないことが多々あります。
+いや、ちょっとした変更で動作はするんですけどGPUを利用できないとかふつうに言ってきます。[^0]
 
-いや、ちょっとした変更で動作はするんですけどGPUを利用できないとかふつうに言ってきます。それどころか親切に用意してあるPyPIからのインストールやDockerfileを利用すると動作しない、setup.pyに記載されているPythonバージョンがDockerfileに記載されているものと違う、というトラップも抜かりありません。
+[^0]:それどころか親切に用意してあるPyPIからのインストールやDockerfileを利用すると動作しない、setup.pyに記載されているPythonバージョンがDockerfileに記載されているものと違う、というトラップも抜かりありません。
 
 それでもまぁ「行けるだろ」と鼻をほじりながらいろいろ試して半日の時間を吸われました。[^1]
 
-[^1]: 本来ならリポジトリオーナーへのリスペクトと同時にISSUEなど投げるのがあるべき姿なのですが、「ちょっとなんでこうしてるのか分かんない…」ところが多々あったので、そっとしておくべきと判断致しました…。
+[^1]: おそらくですがUbuntu 20.04、のようなちょっと古めのホストなら何の問題も無いと思います。また本来ならリポジトリオーナーへのリスペクトと同時にISSUEなど投げるのがあるべき姿なのですが、「なんでこうしてるのか分かんない…」ところがあったので、門外漢が口を出すべきでないと判断致しました…。似てる内容のISSUEが上がってましたし。
 
-もったいないので変更点をシェアして供養します。
+`pip install deepface`でうまく行かない方々に向けて、変更点をシェアして供養します。
+
+## 環境
+```bash
+# pyenvによりpythonバージョン変更済み
+user@user:~/<プロジェクトルートディレクトリ>$ python -V
+Python 3.8.12
+user@user:~/<プロジェクトルートディレクトリ>$ inxi -SG --filter
+System:
+  Kernel: 6.8.0-50-generic x86_64 bits: 64 Desktop: GNOME 42.9
+    Distro: Ubuntu 22.04.5 LTS (Jammy Jellyfish)
+Graphics:
+  Device-1: NVIDIA TU116 [GeForce GTX 1660 Ti] driver: nvidia v: 555.42.06
+  Display: x11 server: X.Org v: 1.21.1.4 driver: X: loaded: nouveau
+    unloaded: fbdev,modesetting,vesa failed: nvidia gpu: nvidia
+    resolution: 2560x1440~60Hz
+  OpenGL: renderer: NVIDIA GeForce GTX 1660 Ti/PCIe/SSE2
+    v: 4.6.0 NVIDIA 555.42.06
+```
 
 ## 最初に結論
-色々やったのですが、最終的には「自分でDockerfile書いてコンテナの中で処理させる」が正解です。Python仮想環境内で、とか、deepFaceが用意してくれているDockerfileをそのまま使うとかだと失敗します。内部でツギハギのコードがあって、その出所が古い箇所が依存関係で荒ぶりまくります。
-一つ注意点なのですが、可能性は低いですがもしかするとホスト環境によってはこのDockerfileのままだとCUDAまわりが荒ぶるかも知れません。[^2]
+おそらくですがUbuntu 20.04、のようなちょっと古めのホストなら何の問題も無いと思います。それ以外のホスト環境で、ということで以下お願いします。
 
-[^2]: そのときはcuda-toolkitやlibcublasのバージョンを修正してください。ただし下手にいじると内部のツギハギコードが荒ぶります…。
+色々やったのですが、最終的には「自分でDockerfile書いてコンテナの中で処理させる」が正解です。Python仮想環境内で、とか、deepFaceが用意してくれているDockerfileをそのまま使うとかだと失敗します。
+
+可能性は低いですがホスト環境によってはこのDockerfileのままだとCUDAまわりが荒ぶるかも知れません。[^2]
+
+[^2]: そのときはcuda-toolkitやlibcublasのバージョンを修正してください。ただし下手にいじるとtensorflowまわりが荒ぶります…。
 
 まず、プロジェクトルートディレクトリに最新のコードをダウンロードしておいてください。
 ```bash
@@ -25,13 +47,13 @@ git clone https://github.com/serengil/deepface.git
 
 このままだとプロジェクトルート/deepface/deepface/...となりますので、プロジェクトルート/deepface/...にしておいてください。
 
-`venv/lib/python3.10/site-packages/deepface/commons/image_utils.py`において、97行目から99行目にかけて、日本語パス対応でエラーを発生させる箇所がありますが、ここをコメントアウトします。[^3]
+`deepface/commons/image_utils.py`の97行目から99行目にかけて、日本語パスでエラーを発生させる箇所がありますが、ここをコメントアウトします。[^3]
 
 [^3]: パスにascii以外が含まれていると即停止させる謎仕様です…。
 
 ```diff
---- a/venv/lib/python3.10/site-packages/deepface/commons/image_utils.py
-+++ b/venv/lib/python3.10/site-packages/deepface/commons/image_utils.py
+--- a/deepface/commons/image_utils.py
++++ b/deepface/commons/image_utils.py
 @@ -97,7 +97,7 @@
     # image name must have english characters
 -    if not img.isascii():
@@ -39,7 +61,9 @@ git clone https://github.com/serengil/deepface.git
 +    # if not img.isascii():
 +    #     raise ValueError(f"Input image must not have non-english characters - {img}")
 ```
-修正したら以下をDockerfileとして保存します。
+修正したら以下をDockerfileとして保存します。[^4]
+
+[^4]: オリジナルのDockerfileを改変したものです。オリジナルは前触れなくサーバを起ち上げ、しかもエラーでサーバが起動しない仕様。これらを改変してGPU対応にしたものです。
 
 ```bash: Dockerfile
 # base image
@@ -122,7 +146,7 @@ deepface-gpu /bin/bash
 
 ### テスト1
 ```bash
-root@terms:/app/deepface# python
+root@user:/app/deepface# python
 Python 3.8.12 (default, Mar  2 2022, 04:56:27) 
 [GCC 10.2.1 20210110] on linux
 Type "help", "copyright", "credits" or "license" for more information.
@@ -155,7 +179,16 @@ result = DeepFace.verify(
 )
 print("Is verified: ", result["verified"])
 ```
-GPUを使用しつつ結果が出力されれば成功です。
+GPUを使用しつつ結果が出力されれば成功です。必要な重みファイルは自動的にダウンロードされます。
 
+## おわりに
+deepFaceそれ自体は2024年も手が加えられていますし、実際に使用して記事をアップしておられる方もいらっしゃるのですね。ただpytorchと比べ、tensorflowを内部で使用してるリポジトリは荒ぶりやすいように感じます（pytorchが内部でよろしくやってくれるのが大きい）。
+決してdeepFaceの使い勝手がよろしくないわけではないことを記載しておきます。
+
+さてGPUも使えるようになったので別記事用の実験をしています。かなり重い処理のはずですがGPUメモリは5.6GB程度で済んでいます。
+
+`pip install deepface`でうまく行かなかったらこの記事を参考にしてください。
+
+以上です。ありがとうございました。
 
 
