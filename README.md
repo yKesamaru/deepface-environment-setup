@@ -1,11 +1,11 @@
 # たのしくないdeepFaceの環境構築
 ## はじめに
-deepFaceは様々な研究で得られたstate-of-the-artな顔照合学習モデルの評価を簡便に行えるラッパー的な軽量フレームワークです。VGG-Face, OpenFace, Google FaceNet, Facebook DeepFace, Dlib, DeepID, ArcFace, SFace, GhostFaceNetを一度に評価できるのがウリです。
+deepFaceは様々な研究で得られたstate-of-the-artな顔照合学習モデルの評価を簡便に行えるラッパー的な軽量フレームワークです。VGG-Face, OpenFace, Google FaceNet, Facebook DeepFace, Dlib, DeepID, ArcFace, SFace, GhostFaceNetを一度に評価できるのがウリです。（顔検出はまた別）
 
-ただ、ですね…、こういうリポジトリにありがちなのですが、ホスト環境によって動作しないことが多々あります。
-いや、ちょっとした変更で動作はするんですけどGPUを利用できないとかふつうに言ってきます。[^0]
+ただ、ですね…、ありがちなのですが、ホスト環境によって動作しないことってありますよね。
+動作はするけどGPUを利用できない、とかふつうにあります。[^0]
 
-[^0]:それどころか親切に用意してあるPyPIからのインストールやDockerfileを利用すると動作しない、setup.pyに記載されているPythonバージョンがDockerfileに記載されているものと違う、というトラップも抜かりありません。
+[^0]: 親切に用意してあるPyPIからのインストールやDockerfileを利用すると動作しない、setup.pyに記載されているPythonバージョンがDockerfileに記載されているものと違う、というトラップも抜かりありません。
 
 それでもまぁ「行けるだろ」と鼻をほじりながらいろいろ試して半日の時間を吸われました。[^1]
 
